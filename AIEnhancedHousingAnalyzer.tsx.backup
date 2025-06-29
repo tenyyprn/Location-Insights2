@@ -1,0 +1,629 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend } from 'recharts';
+import { useAddress } from '../context/AddressContext';
+
+// 絵文字アイコンを使用
+const Icons = {
+  User: () => <span style={{ fontSize: '1rem' }}>👤</span>,
+  Users: () => <span style={{ fontSize: '1rem' }}>👥</span>,
+  Baby: () => <span style={{ fontSize: '1rem' }}>👶</span>,
+  Heart: () => <span style={{ fontSize: '1rem' }}>❤️</span>,
+  AlertTriangle: () => <span style={{ fontSize: '1rem' }}>⚠️</span>,
+  CheckCircle: () => <span style={{ fontSize: '1rem' }}>✅</span>,
+  Info: () => <span style={{ fontSize: '1rem' }}>ℹ️</span>,
+  Star: () => <span style={{ fontSize: '1rem' }}>⭐</span>,
+  TrendingUp: () => <span style={{ fontSize: '1rem' }}>📈</span>,
+  Home: () => <span style={{ fontSize: '1rem' }}>🏠</span>,
+  Bot: () => <span style={{ fontSize: '1rem' }}>🤖</span>
+};
+
+interface HousingScore {
+  交通利便性: number;
+  買い物利便性: number;
+  飲食店: number;
+  医療福祉: number;
+  教育環境: number;
+  安全性: number;
+  環境快適性: number;
+  文化娯楽: number;
+}
+
+interface DemographicsData {
+  population: number;
+  households: number;
+  ageDistribution: {
+    under30: number;
+    age30to50: number;
+    age50to65: number;
+    over65: number;
+  };
+}
+
+interface AIAnalysisProps {
+  onAIAnalysis?: (analysis: string) => void;
+}
+
+type ResidentType = '20代単身ビジネスパーソン' | '30代共働き夫婦（子なし）' | '30代子育て世帯（未就学児）' | '50代夫婦（子ども独立後）';
+
+interface ResidentProfile {
+  icon: React.ReactElement;
+  priority: string[];
+  strengths: string[];
+  concerns: string[];
+  advice: string[];
+  suitability: number;
+}
+
+const AIEnhancedHousingAnalyzer: React.FC<AIAnalysisProps> = ({ 
+  onAIAnalysis 
+}) => {
+  const { currentAddress, housingScores } = useAddress();
+  
+  const [selectedResident, setSelectedResident] = useState<ResidentType>('20代単身ビジネスパーソン');
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<string>('');
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [demographicsData, setDemographicsData] = useState<DemographicsData | null>(null);
+  const [isLoadingDemographics, setIsLoadingDemographics] = useState(false);
+  const [error, setError] = useState<string>('');
+
+  // 人口統計データを取得
+  useEffect(() => {
+    if (currentAddress && typeof currentAddress === 'string') {
+      fetchDemographicsData(String(currentAddress)).then(setDemographicsData);
+    }
+  }, [currentAddress]);
+
+  // 実際のスコアデータの検証
+  if (!housingScores || !currentAddress || typeof currentAddress !== 'string') {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-bold text-amber-800 mb-3 flex items-center justify-center gap-2">
+            ⚠️ データが不足しています
+          </h2>
+          <p className="text-amber-700 mb-4">
+            AI分析を利用するには、まず生活利便性スコア分析を実行してください。
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            🏠 スコア分析へ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const scores = housingScores;
+  const address = typeof currentAddress === 'string' ? currentAddress : String(currentAddress || '');
+
+  // スコアデータの変換
+  const housingData = {
+    address: String(address),
+    scores: {
+      "交通利便性": scores.交通利便性,
+      "買い物利便性": scores.買い物利便性,
+      "飲食店": scores.飲食店,
+      "医療・福祉": scores.医療福祉,
+      "教育環境": scores.教育環境,
+      "安全性": scores.安全性,
+      "環境・快適性": scores.環境快適性,
+      "文化・娯楽": scores.文化娯楽
+    },
+    totalScore: Object.values(scores).reduce((sum, score) => sum + score, 0) / Object.values(scores).length,
+    grade: ""
+  };
+
+  // 総合評価グレード計算
+  housingData.grade = housingData.totalScore >= 85 ? "S (非常に優秀)" :
+                      housingData.totalScore >= 75 ? "A (優秀)" :
+                      housingData.totalScore >= 65 ? "B (良好)" :
+                      housingData.totalScore >= 55 ? "C (普通)" : "D (要改善)";
+
+  // レーダーチャート用データ
+  const radarData = Object.entries(housingData.scores).map(([key, value]) => ({
+    subject: key.replace('・', '\n'),
+    score: value,
+    fullMark: 100
+  }));
+
+  // 棒グラフ用データ
+  const barData = Object.entries(housingData.scores).map(([key, value]) => ({
+    category: key,
+    score: value,
+    color: value >= 80 ? '#10B981' : value >= 60 ? '#3B82F6' : '#EF4444'
+  }));
+
+  // 人口統計データを取得
+  const fetchDemographicsData = async (address: string): Promise<DemographicsData> => {
+    try {
+      setIsLoadingDemographics(true);
+      const response = await fetch(`/api/demographics?address=${encodeURIComponent(address)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          population: data.population || 0,
+          households: data.households || 0,
+          ageDistribution: {
+            under30: data.ageDistribution?.under30 || 0,
+            age30to50: data.ageDistribution?.age30to50 || 0,
+            age50to65: data.ageDistribution?.age50to65 || 0,
+            over65: data.ageDistribution?.over65 || 0
+          }
+        };
+      } else {
+        throw new Error('人口統計データの取得に失敗しました');
+      }
+    } catch (error) {
+      console.error('人口統計データ取得エラー:', error);
+      return {
+        population: 0,
+        households: 0,
+        ageDistribution: { under30: 0, age30to50: 0, age50to65: 0, over65: 0 }
+      };
+    } finally {
+      setIsLoadingDemographics(false);
+    }
+  };
+
+  // 住民属性別データ（実際のスコアを使用）
+  const generateResidentProfiles = (scores: HousingScore): Record<ResidentType, ResidentProfile> => {
+    return {
+      "20代単身ビジネスパーソン": {
+        icon: <Icons.User />,
+        priority: ["交通利便性", "買い物利便性", "環境・快適性"],
+        strengths: [
+          `交通利便性${scores.交通利便性}点で通勤・移動が便利`,
+          `買い物利便性${scores.買い物利便性}点で日常生活が快適`,
+          `飲食店${scores.飲食店}点で外食選択肢が${scores.飲食店 >= 80 ? '豊富' : '確保'}`
+        ],
+        concerns: [
+          scores.安全性 < 70 ? "夜間の安全性に注意が必要" : "",
+          scores.環境快適性 < 70 ? "騒音・人混みによるストレス" : ""
+        ].filter(Boolean),
+        advice: [
+          "安全な帰宅ルートを事前に確認",
+          scores.環境快適性 >= 70 ? "静かな環境を活用してリモートワーク" : "防音対策を検討",
+          "週末は静かなエリアでリフレッシュ"
+        ],
+        suitability: Math.round((scores.交通利便性 * 0.25 + scores.買い物利便性 * 0.2 + scores.飲食店 * 0.15 + scores.環境快適性 * 0.15 + scores.安全性 * 0.15 + scores.医療福祉 * 0.1))
+      },
+      "30代共働き夫婦（子なし）": {
+        icon: <Icons.Users />,
+        priority: ["交通利便性", "買い物利便性", "医療・福祉"],
+        strengths: [
+          `交通利便性${scores.交通利便性}点で共働きに便利`,
+          `買い物利便性${scores.買い物利便性}点で時短買い物が可能`,
+          `飲食店${scores.飲食店}点で外食・デリバリーが${scores.飲食店 >= 80 ? '充実' : '利用可能'}`
+        ],
+        concerns: [
+          scores.教育環境 < 70 ? "将来の子育て環境の検討が必要" : "",
+          scores.環境快適性 < 70 ? "静かな時間の確保が課題" : ""
+        ].filter(Boolean),
+        advice: [
+          "ネットスーパー・宅配サービス活用",
+          "平日夜の外食・デリバリー利用",
+          scores.教育環境 >= 70 ? "将来の子育て環境も良好" : "将来の子育て環境も事前リサーチ"
+        ],
+        suitability: Math.round((scores.交通利便性 * 0.22 + scores.買い物利便性 * 0.2 + scores.飲食店 * 0.18 + scores.医療福祉 * 0.15 + scores.安全性 * 0.15 + scores.環境快適性 * 0.1))
+      },
+      "30代子育て世帯（未就学児）": {
+        icon: <Icons.Baby />,
+        priority: ["安全性", "教育環境", "医療・福祉"],
+        strengths: [
+          `教育環境${scores.教育環境}点で子育て選択肢が${scores.教育環境 >= 80 ? '豊富' : '確保'}`,
+          `医療・福祉${scores.医療福祉}点で小児科アクセス${scores.医療福祉 >= 80 ? '良好' : 'あり'}`,
+          `安全性${scores.安全性}点で子どもの安全${scores.安全性 >= 80 ? '確保' : '対策可能'}`
+        ],
+        concerns: [
+          scores.安全性 < 80 ? "子どもの安全面でより注意が必要" : "",
+          scores.教育環境 < 70 ? "教育選択肢の事前調査が必要" : ""
+        ].filter(Boolean),
+        advice: [
+          "保育園・幼稚園の早期情報収集",
+          "安全な散歩・遊歩道ルート確認",
+          "緊急時の医療機関連絡先整備"
+        ],
+        suitability: Math.round((scores.安全性 * 0.3 + scores.教育環境 * 0.25 + scores.医療福祉 * 0.2 + scores.環境快適性 * 0.15 + scores.交通利便性 * 0.1))
+      },
+      "50代夫婦（子ども独立後）": {
+        icon: <Icons.Heart />,
+        priority: ["医療・福祉", "環境・快適性", "交通利便性"],
+        strengths: [
+          `医療・福祉${scores.医療福祉}点で健康管理に${scores.医療福祉 >= 80 ? '安心' : '対応可能'}`,
+          `交通利便性${scores.交通利便性}点で移動が${scores.交通利便性 >= 80 ? '楽' : '可能'}`,
+          scores.買い物利便性 >= 80 ? "都市部の文化・芸術施設が豊富" : "生活利便施設への一定のアクセス"
+        ],
+        concerns: [
+          scores.環境快適性 < 70 ? "騒音による生活品質低下" : "",
+          scores.買い物利便性 < 70 ? "日常の買い物にやや不便" : ""
+        ].filter(Boolean),
+        advice: [
+          "静かなカフェ・図書館の活用",
+          "定期健康チェックアップ体制構築",
+          scores.環境快適性 >= 70 ? "静かな環境での趣味活動" : "騒音対策と時間帯調整"
+        ],
+        suitability: Math.round((scores.医療福祉 * 0.3 + scores.環境快適性 * 0.25 + scores.交通利便性 * 0.15 + scores.安全性 * 0.1 + scores.買い物利便性 * 0.1 + scores.飲食店 * 0.1))
+      }
+    };
+  };
+
+  const residentProfiles = generateResidentProfiles(scores);
+  const currentProfile = residentProfiles[selectedResident];
+
+  // AI分析を実行する関数
+  const requestAIAnalysis = async () => {
+    setIsLoadingAI(true);
+    setError('');
+    
+    try {
+      const scoreText = Object.entries(housingData.scores)
+        .map(([key, value]) => `- ${key}: ${value}点`)
+        .join('\n');
+
+      const prompt = `${String(address)}周辺の住環境について、不動産の専門家として以下のスコアを基に詳細分析してください：
+
+【各項目スコア】
+${scoreText}
+
+【分析観点】
+1. この立地の最大の魅力と住環境の特徴
+2. 日常生活での利便性とメリット
+3. 注意すべき点やデメリット
+4. どのような人におすすめか
+
+300文字程度で専門的かつ分かりやすく説明してください。`;
+
+      const response = await fetch('/api/ai-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          address: String(address),
+          scores: housingData.scores
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiAnalysisResult(data.analysis);
+        if (onAIAnalysis) {
+          onAIAnalysis(data.analysis);
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'AI分析サービスの呼び出しに失敗しました');
+      }
+    } catch (error) {
+      console.error('AI分析エラー:', error);
+      setError('AI分析サービスが一時的に利用できません。しばらく時間をおいてからお試しください。');
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* コンパクトヘッダー */}
+      <div className="bg-white rounded-lg border p-4 shadow-sm">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <Icons.Home />
+          AI住環境分析
+        </h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">{String(address)}</h2>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xl font-bold text-blue-600">{housingData.totalScore.toFixed(1)}点</span>
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                {housingData.grade}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* エラー表示 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-red-500">⚠️</span>
+            <span className="text-red-700 text-sm">{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* コンパクトスコア可視化 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 棒グラフ */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Icons.TrendingUp />
+              項目別スコア
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="category" 
+                  angle={-45} 
+                  textAnchor="end" 
+                  height={60}
+                  fontSize={11}
+                />
+                <YAxis domain={[0, 100]} fontSize={11} />
+                <Tooltip />
+                <Bar dataKey="score" fill="#3B82F6" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* レーダーチャート */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">総合バランス</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <RadarChart data={radarData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" fontSize={10} />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
+                <Radar 
+                  name="スコア" 
+                  dataKey="score" 
+                  stroke="#3B82F6" 
+                  fill="#3B82F6" 
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* コンパクト人口統計 */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Icons.Users />
+            地域データ
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingDemographics ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-gray-600 text-sm">データ取得中...</p>
+            </div>
+          ) : demographicsData && demographicsData.population > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-blue-50 p-3 rounded">
+                <div className="text-sm text-blue-800">総人口</div>
+                <div className="text-lg font-bold text-blue-600">
+                  {demographicsData.population.toLocaleString()}人
+                </div>
+              </div>
+              <div className="bg-green-50 p-3 rounded">
+                <div className="text-sm text-green-800">世帯数</div>
+                <div className="text-lg font-bold text-green-600">
+                  {demographicsData.households.toLocaleString()}
+                </div>
+              </div>
+              <div className="bg-purple-50 p-3 rounded">
+                <div className="text-sm text-purple-800">高齢化率</div>
+                <div className="text-lg font-bold text-purple-600">
+                  {demographicsData.ageDistribution.over65}%
+                </div>
+              </div>
+              <div className="bg-orange-50 p-3 rounded">
+                <div className="text-sm text-orange-800">世帯人員</div>
+                <div className="text-lg font-bold text-orange-600">
+                  {demographicsData.households > 0 ? 
+                    (demographicsData.population / demographicsData.households).toFixed(1) : '0'}人
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500 text-sm">
+              詳細な人口統計データは現在取得できません
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* コンパクト住民属性別分析 */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Icons.User />
+            属性別分析
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* 属性選択 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+            {(Object.keys(residentProfiles) as ResidentType[]).map((profile) => (
+              <button
+                key={profile}
+                onClick={() => setSelectedResident(profile)}
+                className={`p-2 rounded border-2 transition-all text-xs ${
+                  selectedResident === profile
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-1 mb-1">
+                  {residentProfiles[profile].icon}
+                  <span className="font-medium">{profile}</span>
+                </div>
+                <div className="text-xs text-gray-600">
+                  適合度: {residentProfiles[profile].suitability}%
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* 詳細分析 */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                {currentProfile.icon}
+                {selectedResident}
+              </h3>
+              <span className="text-sm font-bold text-green-600">
+                適合度: {currentProfile.suitability}%
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {/* 強み */}
+              <div>
+                <h4 className="font-semibold text-green-700 mb-2">✅ 強み</h4>
+                <ul className="space-y-1">
+                  {currentProfile.strengths.slice(0, 3).map((strength: string, index: number) => (
+                    <li key={index} className="text-gray-700">• {strength}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* アドバイス */}
+              <div>
+                <h4 className="font-semibold text-blue-700 mb-2">💡 アドバイス</h4>
+                <ul className="space-y-1">
+                  {currentProfile.advice.slice(0, 3).map((tip: string, index: number) => (
+                    <li key={index} className="text-gray-700">• {tip}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* 注意点（ある場合のみ） */}
+            {currentProfile.concerns.length > 0 && (
+              <div className="mt-3 pt-3 border-t">
+                <h4 className="font-semibold text-orange-700 mb-2">⚠️ 注意点</h4>
+                <ul className="space-y-1 text-sm">
+                  {currentProfile.concerns.map((concern: string, index: number) => (
+                    <li key={index} className="text-gray-700">• {concern}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* コンパクトAI分析 */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Icons.Bot />
+            AI専門分析
+          </CardTitle>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+              className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors"
+            >
+              {showAIAnalysis ? '分析を隠す' : '分析を表示'}
+            </button>
+            {showAIAnalysis && (
+              <button
+                onClick={requestAIAnalysis}
+                disabled={isLoadingAI}
+                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {isLoadingAI ? '分析中...' : 'AI分析実行'}
+              </button>
+            )}
+          </div>
+        </CardHeader>
+        {showAIAnalysis && (
+          <CardContent>
+            {aiAnalysisResult ? (
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                <h4 className="font-semibold text-purple-800 mb-2 flex items-center gap-2">
+                  🤖 AI専門家分析
+                </h4>
+                <div className="text-purple-700 text-sm leading-relaxed whitespace-pre-line">
+                  {aiAnalysisResult}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 p-4 rounded-lg border text-center">
+                <p className="text-gray-600 text-sm">
+                  「AI分析実行」ボタンでOpenAI GPTによる詳細分析を取得
+                </p>
+              </div>
+            )}
+
+            {/* スコア概要 */}
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              {/* 強み */}
+              <div>
+                <h4 className="font-semibold text-green-700 mb-2">✅ 強み (80点以上)</h4>
+                <ul className="space-y-1">
+                  {Object.entries(housingData.scores)
+                    .filter(([, score]) => score >= 80)
+                    .map(([category, score], index) => (
+                      <li key={index} className="text-gray-700">
+                        {category}: {score}点
+                      </li>
+                    ))}
+                  {Object.entries(housingData.scores).filter(([, score]) => score >= 80).length === 0 && (
+                    <li className="text-gray-500">なし</li>
+                  )}
+                </ul>
+              </div>
+
+              {/* 普通 */}
+              <div>
+                <h4 className="font-semibold text-blue-700 mb-2">📊 標準 (60-79点)</h4>
+                <ul className="space-y-1">
+                  {Object.entries(housingData.scores)
+                    .filter(([, score]) => score >= 60 && score < 80)
+                    .slice(0, 4)
+                    .map(([category, score], index) => (
+                      <li key={index} className="text-gray-700">
+                        {category}: {score}点
+                      </li>
+                    ))}
+                </ul>
+              </div>
+
+              {/* 課題 */}
+              <div>
+                <h4 className="font-semibold text-red-700 mb-2">⚠️ 課題 (60点未満)</h4>
+                <ul className="space-y-1">
+                  {Object.entries(housingData.scores)
+                    .filter(([, score]) => score < 60)
+                    .map(([category, score], index) => (
+                      <li key={index} className="text-gray-700">
+                        {category}: {score}点
+                      </li>
+                    ))}
+                  {Object.entries(housingData.scores).filter(([, score]) => score < 60).length === 0 && (
+                    <li className="text-gray-500">なし</li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default AIEnhancedHousingAnalyzer;

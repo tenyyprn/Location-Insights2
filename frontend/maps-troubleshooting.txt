@@ -1,0 +1,39 @@
+🔍 Google Maps API トラブルシューティング
+
+【確認項目】
+1. APIキー設定
+   ✅ .env ファイルに REACT_APP_GOOGLE_MAPS_API_KEY が設定されている
+   ✅ APIキーが39文字の英数字文字列
+
+2. Google Cloud Console 設定
+   ✅ Maps JavaScript API が有効
+   ✅ Places API が有効  
+   ✅ Geocoding API が有効
+   ✅ 請求先アカウントが設定済み
+
+3. APIキー制限
+   ✅ HTTPリファラー制限で localhost:3000 が許可されている
+   ✅ または制限が「なし」に設定されている
+
+【よくあるエラーと解決方法】
+
+❌ RefererNotAllowedMapError
+→ HTTPリファラー制限で localhost:3000 を追加
+
+❌ ApiNotActivatedMapError  
+→ Maps JavaScript API を有効化
+
+❌ InvalidKeyMapError
+→ APIキーを再確認、新しいキーを作成
+
+❌ QuotaExceededError
+→ 請求先アカウントを設定、またはクォータ制限を確認
+
+【デバッグ手順】
+1. F12 → Console でエラーメッセージを確認
+2. F12 → Network で maps.googleapis.com への リクエストを確認
+3. 一時的にAPIキー制限を「なし」に設定してテスト
+
+【代替案】
+- 上記で追加したSimpleMapTest（静的マップ）を使用
+- Google Maps Embed API の利用（制限が少ない）

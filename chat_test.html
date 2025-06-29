@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Insights Chat Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .user {
+            background: #007bff;
+            color: white;
+            text-align: right;
+        }
+        .assistant {
+            background: #f1f3f4;
+            color: #333;
+        }
+        .system {
+            background: #e3f2fd;
+            color: #1565c0;
+            text-align: center;
+            font-style: italic;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .test-buttons button {
+            font-size: 12px;
+            padding: 6px 12px;
+            background: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Location Insights チャット機能テスト</h1>
+        
+        <div id="status" class="status disconnected">
+            💔 切断中
+        </div>
+        
+        <div class="test-buttons">
+            <button onclick="connect()">接続</button>
+            <button onclick="disconnect()">切断</button>
+            <button onclick="clearMessages()">履歴クリア</button>
+            <button onclick="sendTestMessage('この地域の治安はどうですか？')">治安テスト</button>
+            <button onclick="sendTestMessage('最寄りの駅までの距離は？')">交通テスト</button>
+            <button onclick="sendTestMessage('子育てに向いていますか？')">子育てテスト</button>
+        </div>
+        
+        <div id="messages" class="messages"></div>
+        
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="messageInput" 
+                placeholder="メッセージを入力..."
+                onkeypress="handleKeyPress(event)"
+            >
+            <button onclick="sendMessage()" id="sendButton" disabled>
+                送信
+            </button>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>WebSocket URL:</strong> ws://localhost:8000/ws/chat/test_session<br>
+            <strong>テスト手順:</strong> サーバーを起動後、「接続」ボタンをクリック
+        </div>
+    </div>
+
+    <script>
+        let websocket = null;
+        let isConnected = false;
+        
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        
+        function updateStatus(connected, message) {
+            isConnected = connected;
+            statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`;
+            statusEl.textContent = connected ? `✅ ${message}` : `💔 ${message}`;
+            sendButton.disabled = !connected;
+        }
+        
+        function addMessage(role, content, timestamp = new Date()) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const timeStr = timestamp.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const icon = role === 'user' ? '👤' : role === 'assistant' ? '🤖' : '📢';
+            messageDiv.innerHTML = `${icon} ${content} <small style="opacity: 0.7;">(${timeStr})</small>`;
+            
+            messagesEl.appendChild(messageDiv);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+        
+        function connect() {
+            if (websocket) {
+                websocket.close();
+            }
+            
+            const wsUrl = 'ws://localhost:8000/ws/chat/test_session';
+            updateStatus(false, '接続中...');
+            
+            websocket = new WebSocket(wsUrl);
+            
+            websocket.onopen = () => {
+                updateStatus(true, '接続済み');
+                addMessage('system', 'WebSocket接続が確立されました');
+            };
+            
+            websocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('受信:', data);
+                    
+                    switch (data.type) {
+                        case 'message':
+                            addMessage(data.role || 'assistant', data.content);
+                            break;
+                        case 'system':
+                            addMessage('system', data.content);
+                            break;
+                        case 'error':
+                            addMessage('system', `エラー: ${data.content}`);
+                            break;
+                        default:
+                            console.log('未知のメッセージ:', data);
+                    }
+                } catch (error) {
+                    console.error('メッセージ解析エラー:', error);
+                }
+            };
+            
+            websocket.onclose = (event) => {
+                updateStatus(false, '切断');
+                addMessage('system', `接続が切断されました (コード: ${event.code})`);
+            };
+            
+            websocket.onerror = (error) => {
+                updateStatus(false, '接続エラー');
+                addMessage('system', '接続エラーが発生しました');
+                console.error('WebSocketエラー:', error);
+            };
+        }
+        
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+            }
+        }
+        
+        function sendMessage() {
+            const content = messageInput.value.trim();
+            if (!content || !isConnected) return;
+            
+            const message = {
+                type: 'message',
+                content: content,
+                timestamp: new Date().toISOString()
+            };
+            
+            websocket.send(JSON.stringify(message));
+            addMessage('user', content);
+            messageInput.value = '';
+        }
+        
+        function sendTestMessage(content) {
+            if (!isConnected) {
+                alert('先に接続してください');
+                return;
+            }
+            messageInput.value = content;
+            sendMessage();
+        }
+        
+        function clearMessages() {
+            messagesEl.innerHTML = '';
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        // 自動接続
+        setTimeout(connect, 1000);
+    </script>
+</body>
+</html>

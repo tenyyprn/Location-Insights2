@@ -1,0 +1,267 @@
+/* Chart and Form Additional Styles */
+
+/* チャート用スタイル */
+.chart-placeholder, .trend-chart-placeholder {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.mock-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-bar span {
+  min-width: 120px;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.bar {
+  height: 20px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  min-width: 20px;
+}
+
+.line-chart-mock {
+  display: flex;
+  justify-content: space-around;
+  align-items: end;
+  height: 250px;
+  margin-top: 20px;
+  padding: 20px;
+  border-bottom: 2px solid #ddd;
+}
+
+.data-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.point-bar {
+  width: 30px;
+  background: linear-gradient(to top, #4BC0C0, #81E6D9);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+}
+
+.point-label {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.point-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* Radio Group スタイル */
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.radio-group-item {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #4299e1;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.radio-group-item:checked {
+  background: #4299e1;
+  border-color: #3182ce;
+}
+
+/* Tabs スタイル */
+.tabs {
+  width: 100%;
+}
+
+.tabs-list {
+  display: flex;
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.tabs-trigger {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tabs-trigger:hover {
+  background: #edf2f7;
+}
+
+.tabs-trigger[data-value="investment"] {
+  background: #4299e1;
+  color: white;
+}
+
+.tabs-trigger[data-value="risk"] {
+  background: #e53e3e;
+  color: white;
+}
+
+.tabs-content {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Form エラー状態 */
+.form-input.border-red-500 {
+  border-color: #e53e3e;
+  box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+}
+
+.text-red-500 {
+  color: #e53e3e;
+}
+
+/* Textarea スタイル */
+textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* 改善されたカードスタイル */
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4299e1, #3182ce);
+}
+
+/* レスポンシブチャート */
+@media (max-width: 768px) {
+  .mock-chart {
+    max-width: 100%;
+  }
+  
+  .chart-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .chart-bar span {
+    min-width: auto;
+    text-align: left;
+  }
+  
+  .line-chart-mock {
+    height: 200px;
+    padding: 10px;
+  }
+  
+  .data-point {
+    gap: 5px;
+  }
+  
+  .point-bar {
+    width: 20px;
+  }
+  
+  .point-label, .point-value {
+    font-size: 0.7rem;
+  }
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .chart-placeholder, .trend-chart-placeholder {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #f7fafc;
+  }
+  
+  .tabs-list {
+    background: #2d3748;
+  }
+  
+  .tabs-trigger:hover {
+    background: #4a5568;
+  }
+  
+  .point-value {
+    color: #f7fafc;
+  }
+  
+  .point-label {
+    color: #a0aec0;
+  }
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ボタンアニメーション */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::after {
+  width: 300px;
+  height: 300px;
+}

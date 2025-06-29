@@ -1,0 +1,235 @@
+/* Dashboard & Form追加スタイル */
+
+/* 市場トレンド */
+.market-trends {
+  display: grid;
+  gap: 20px;
+}
+
+.market-trend-item {
+  background: #f7fafc;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #4299e1;
+}
+
+.trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.trend-header h4 {
+  margin: 0;
+  color: #2d3748;
+  font-size: 1.2rem;
+}
+
+.trend-indicator {
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.trend-indicator.positive {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.trend-indicator.negative {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.trend-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.trend-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+}
+
+.trend-metric .metric-label {
+  font-size: 0.8rem;
+  color: #718096;
+  margin-bottom: 5px;
+}
+
+.trend-metric .metric-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* システム情報 */
+.system-info {
+  margin-top: 15px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #f7fafc;
+  border-radius: 6px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.info-value {
+  color: #2d3748;
+  font-weight: 500;
+}
+
+/* 分析詳細 */
+.analysis-details {
+  margin-top: 20px;
+}
+
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.detail-section h4 {
+  color: #2d3748;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+
+.evaluation-factors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.factor-group {
+  background: #f7fafc;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.factor-group h5 {
+  color: #4299e1;
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+}
+
+.factor-group ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #4a5568;
+}
+
+.factor-group li {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+/* エラーメッセージ */
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+/* フォーム改善 */
+.form-input:invalid {
+  border-color: #e53e3e;
+}
+
+.form-input:valid {
+  border-color: #38a169;
+}
+
+/* 印刷スタイル */
+@media print {
+  .nav-tabs, .btn, .app-header {
+    display: none !important;
+  }
+  
+  .card {
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+    page-break-inside: avoid;
+  }
+  
+  .score-display {
+    background: #f7fafc !important;
+    color: #2d3748 !important;
+  }
+}
+
+/* レスポンシブ改善 */
+@media (max-width: 768px) {
+  .trend-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .trend-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .evaluation-factors {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .trend-metric {
+    padding: 8px;
+  }
+}
+
+/* アクセシビリティ改善 */
+.btn:focus, .form-input:focus, .form-select:focus {
+  outline: 2px solid #4299e1;
+  outline-offset: 2px;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #2d3748;
+    color: #f7fafc;
+  }
+  
+  .form-input, .form-select {
+    background: #4a5568;
+    border-color: #718096;
+    color: #f7fafc;
+  }
+  
+  .info-item, .factor-group, .market-trend-item {
+    background: #4a5568;
+  }
+  
+  .trend-metric {
+    background: #2d3748;
+  }
+}

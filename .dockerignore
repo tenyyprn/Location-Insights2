@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 開発用ファイル
+*.bat
+*.sh
+*.md
+.env.development
+.env.staging
+.env.example
+.env_*
+
+# Heroku関連
+.heroku/
+Procfile
+
+# デプロイ関連
+deploy/
+deleted_files/
+
+# テストファイル
+test_*
+debug_*
+check_*
+fix_*
+*_test.py
+*_debug.py
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp
+
+# バックアップファイル
+*_backup.py
+*_fixed.py

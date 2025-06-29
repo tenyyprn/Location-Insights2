@@ -1,0 +1,22 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+python-dotenv==1.0.0
+aiohttp==3.9.1
+requests==2.31.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Google Cloud AI Platform (Vertex AI) - 最新版に更新
+google-cloud-aiplatform>=1.40.0
+# vertexai パッケージは google-cloud-aiplatform に含まれているため削除
+
+# Google Cloud Natural Language AI
+google-cloud-language==2.10.1
+google-auth==2.22.0
+google-auth-oauthlib==1.1.0
+google-cloud-core==2.4.1
+
+# Python 3.12対応バージョンに更新
+numpy>=1.26.0
+pandas>=2.1.0
